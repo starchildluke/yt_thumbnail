@@ -1,20 +1,34 @@
 import streamlit as st
+import regex as re
 import requests
+import argparse
+import webbrowser
 
-url = st.text_input("Enter the video URL you wish to extract a thumbnail from.")
-slug = 'https://www.youtube.com/watch?v='
+# Create CL argument for URLs
+parser = argparse.ArgumentParser(description=None)
+parser.add_argument("-u", "--url", type=str)
+args = parser.parse_args()
+url = args.url
+cleaned_url = url.replace("\\", "")
 
-extract = st.button('Extract thumbnail')
+def extract_video_id(url):
+    # Regular expression pattern to match the video ID
+    pattern = r"(?<=youtu.be/|watch\?v=|/videos/|embed\/|youtu.be\/|v=|\?v=|\&v=|\\embed\/)[^#\&\?\n]*"
 
-if extract:
+    # Find all matches of the pattern in the URL
+    matches = re.findall(pattern, url)
 
-	if slug in url:
-	  match = url.replace(slug, '')
+    if len(matches) > 0:
+        return matches[0]
 
-	thumb = 'https://img.youtube.com/vi/' + match + '/maxresdefault.jpg'
-	thumb_hq = 'https://img.youtube.com/vi/' + match + '/hqdefault.jpg'
+    return "Nothing found, try again."
 
-	if requests.get(thumb).status_code == 404:
-		st.image(thumb_hq)
-	else:
-		st.image(thumb)
+video_id = extract_video_id(cleaned_url)
+
+thumb = 'https://img.youtube.com/vi/' + video_id + '/maxresdefault.jpg'
+thumb_hq = 'https://img.youtube.com/vi/' + video_id + '/hqdefault.jpg'
+
+if requests.get(thumb).status_code == 200:
+    webbrowser.open(thumb)
+else:
+    webbrowser.open(thumb_hq)
